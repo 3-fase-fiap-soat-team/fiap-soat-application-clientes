@@ -1,0 +1,31 @@
+# Use the official Node.js image as the base image
+FROM node:20
+
+# Set timezone environment variable
+ENV TZ=America/Sao_Paulo
+
+# Set the working directory inside the container
+WORKDIR /usr/src/app
+
+# Copy package.json and package-lock.json to the working directory
+COPY package*.json ./
+
+# Install the application dependencies
+RUN npm install
+
+# Copy the rest of the application files
+COPY . .
+
+# Build the NestJS application
+RUN npm run build
+
+# Copy migrations and config to dist folder for production
+RUN cp -r migrations dist/ 2>/dev/null || true
+RUN cp typeorm-cli.config.* dist/ 2>/dev/null || true
+
+# Expose the application port
+EXPOSE 3000
+
+# Command to run the application
+CMD ["npm", "run", "start:prod"]
+
