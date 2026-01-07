@@ -1,4 +1,4 @@
-import { ICustomerDataSource } from "../../../interfaces/customer-datasource";
+import { ICustomerDataSource } from "src/interfaces/customer-datasource";
 import { Customer } from "../../entities/customer";
 
 export class CustomersGateway {

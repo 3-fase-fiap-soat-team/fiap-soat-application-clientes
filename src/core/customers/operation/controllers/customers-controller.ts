@@ -1,4 +1,4 @@
-import { ICustomerDataSource } from "../../../interfaces/customer-datasource";
+import { ICustomerDataSource } from "src/interfaces/customer-datasource";
 import { CustomersGateway } from "../gateways/customers-gateway";
 import { CustomersPresenter } from "../presenters/customers-presenter";
 import { GetCustomerPresenter } from "../presenters/get-customer-presenter";
