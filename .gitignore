@@ -43,3 +43,6 @@ lerna-debug.log*
 # Build
 *.tsbuildinfo
 
+
+# Kubernetes Secrets (NÃO COMMITAR)
+k8s/secret.yaml
