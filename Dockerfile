@@ -23,9 +23,12 @@ RUN npm run build
 RUN cp -r migrations dist/ 2>/dev/null || true
 RUN cp typeorm-cli.config.* dist/ 2>/dev/null || true
 
+# Copy start script
+COPY start.sh ./
+RUN chmod +x start.sh
+
 # Expose the application port
 EXPOSE 3000
 
-# Command to run the application
-CMD ["npm", "run", "start:prod"]
-
+# Command to run migrations and start the application
+CMD ["./start.sh"]
