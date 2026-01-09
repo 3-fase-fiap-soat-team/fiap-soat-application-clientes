@@ -1,23 +1,200 @@
-# 🚀 Application Clientes - Microserviço de Clientes
+# 🚀 SOAT Tech Challenge — Serviço de Clientes (Cloud-Native)
 
-Microserviço independente para gerenciamento de clientes, extraído do sistema monolítico SOAT Tech Challenge.
+Repositório do serviço de **Clientes** do SOAT Tech Challenge. Implementa CRUD completo de clientes usando **Clean Architecture**, **TypeORM** e está preparado para deployment cloud-native (EKS + RDS).
 
 ---
 
 ## 🎯 Sobre o Projeto
 
-Este microserviço é responsável por todas as operações relacionadas a clientes:
-- ✅ **CRUD completo** de clientes
-- ✅ **Busca por CPF** e ID
+Serviço responsável por gerenciar os clientes do SOAT. Principais características:
+- ✅ **API REST** para CRUD completo de clientes
+- ✅ **Busca por CPF e ID** de clientes
 - ✅ **Validação de unicidade** (CPF e email)
-- ✅ **Arquitetura Limpa** (Clean Architecture + CQRS)
-- ✅ **Deploy cloud-native** (Kubernetes EKS + PostgreSQL RDS)
+- ✅ **Clean Architecture** (domain-first)
+- ✅ **TypeORM** com migrations para persistência em PostgreSQL
+- ✅ **Testes unitários e E2E** (Jest)
+- ✅ **Pronto para deploy cloud-native** (EKS + RDS)
+
+> **Nota**: Este repositório implementa apenas o serviço de clientes — outras responsabilidades do sistema (produtos, pedidos, categorias, pagamentos, autenticação) estão em repositórios separados listados em "Links Úteis".
 
 ---
 
-## 🏗️ Arquitetura
+## 🏗️ Arquitetura Cloud-Native
 
-O microserviço segue a **Clean Architecture** com separação clara de responsabilidades:
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        AWS CLOUD                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌──────────────┐      ┌─────────────────────────────┐    │
+│  │  API Gateway │──────▶│  Lambda (Auth/Signup)      │    │
+│  │  REST API    │      │  Node.js 20.x              │    │
+│  └──────────────┘      └─────────────────────────────┘    │
+│         │                           │                       │
+│         │                           ▼                       │
+│         │                  ┌──────────────────┐            │
+│         │                  │  Cognito User Pool│            │
+│         │                  │  (custom:cpf)     │            │
+│         │                  └──────────────────┘            │
+│         │                                                   │
+│         ▼                                                   │
+│  ┌──────────────────────────────────────────────┐         │
+│  │  Network Load Balancer (NLB)                 │         │
+│  │  ade6621a32ddf...elb.us-east-1.amazonaws.com │         │
+│  └──────────────────────────────────────────────┘         │
+│         │                                                   │
+│         ▼                                                   │
+│  ┌─────────────────────────────────────────────────────┐  │
+│  │  EKS Cluster (fiap-soat-eks-dev)                   │  │
+│  │  Kubernetes 1.30 | 2x t3.micro nodes               │  │
+│  │                                                     │  │
+│  │  ┌────────────────────────────────────────────┐   │  │
+│  │  │  Namespace: fiap-soat-app                  │   │  │
+│  │  │  ┌──────────────────────────────────────┐  │   │  │
+│  │  │  │  Deployment: fiap-soat-application   │  │   │  │
+│  │  │  │  - Image: NestJS (ECR)               │  │   │  │
+│  │  │  │  - HPA: 1-3 replicas (auto)          │  │   │  │
+│  │  │  │  - Resources: 512Mi/500m CPU         │  │   │  │
+│  │  │  │  - Health Checks: /health            │  │   │  │
+│  │  │  │  - Port: 3000                        │  │   │  │
+│  │  │  └──────────────────────────────────────┘  │   │  │
+│  │  └────────────────────────────────────────────┘   │  │
+│  └─────────────────────────────────────────────────────┘  │
+│         │                                                   │
+│         ▼                                                   │
+│  ┌─────────────────────────────────────────────────────┐  │
+│  │  RDS PostgreSQL (fiap-soat-db)                      │  │
+│  │  PostgreSQL 17.4 | db.t3.micro                      │  │
+│  │  Endpoint: fiap-soat-db.cfcimi4ia52v...amazonaws.com│  │
+│  └─────────────────────────────────────────────────────┘  │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🚀 Deploy e Execução
+
+### ⚠️ Observação: Deploy cloud-native recomendado
+
+A aplicação é pensada para deployment em cloud (EKS + RDS), porém é possível rodar em ambiente local para desenvolvimento e testes (usando um arquivo `.env` apropriado, `npm run start:dev` ou `docker-compose up`).
+
+### Pré-requisitos
+
+- ✅ **EKS Cluster** configurado ([repo EKS](https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform))
+- ✅ **RDS PostgreSQL** provisionado ([repo RDS](https://github.com/3-fase-fiap-soat-team/fiap-soat-database-terraform))
+- ✅ **Lambda + Cognito** deployado ([repo Lambda](https://github.com/3-fase-fiap-soat-team/fiap-soat-lambda))
+- ✅ **AWS CLI** configurado
+- ✅ **kubectl** instalado e configurado
+- ✅ **Docker** instalado
+
+### 🔧 Rodando localmente
+
+Opções para desenvolvimento local:
+
+- Usando Node:
+
+```bash
+# instalar dependências
+npm install
+
+# criar um arquivo .env.local (exemplo abaixo) ou exportar variáveis
+# .env.local
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USERNAME=postgres
+DATABASE_PASSWORD=postgres
+DATABASE_NAME=customers_db
+DATABASE_SSL=false
+NODE_ENV=development
+PORT=3000
+
+# rodar em modo dev
+npm run start:dev
+
+# rodar migrações
+npm run migration:up
+
+# rodar testes
+npm run test
+```
+
+- Usando Docker Compose (requer Postgres acessível ou ajuste do `.env`):
+
+```bash
+docker-compose up --build
+```
+
+### 1️⃣ Build e Push da Imagem
+
+```bash
+# Build da imagem Docker
+docker build -t fiap-soat-application-clientes:latest .
+
+# Tag para ECR
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+docker tag fiap-soat-application-clientes:latest <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fiap-soat-application-clientes:latest
+
+# Push para ECR
+docker push <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fiap-soat-application-clientes:latest
+```
+
+### 2️⃣ Deploy no Kubernetes
+
+```bash
+# Aplicar manifests (do repositório EKS)
+cd ../fiap-soat-k8s-terraform
+
+# Infraestrutura Kubernetes (namespace, configmap, secret, service, HPA)
+kubectl apply -f manifests/namespace.yaml
+kubectl apply -f manifests/configmap.yaml
+kubectl apply -f manifests/secret.yaml
+kubectl apply -f manifests/service.yaml
+kubectl apply -f manifests/hpa.yaml
+
+# Deployment da aplicação (neste repositório)
+cd ../fiap-soat-application-clientes
+kubectl apply -f k8s/deployment.yaml
+
+# Verificar deployment
+kubectl get all -n fiap-soat-app
+kubectl logs -f deployment/fiap-soat-application-clientes -n fiap-soat-app
+```
+
+> **📝 Nota**: O deployment agora está neste repositório (`k8s/deployment.yaml`) e usa os recursos padronizados:
+> - Container: `fiap-soat-application-clientes`
+> - ConfigMap: `fiap-soat-application-clientes-config`
+> - Secret: `fiap-soat-application-clientes-secrets`
+> - Service: `fiap-soat-application-clientes-service`
+> - Health Checks: Liveness + Readiness probes (`/health`)
+> - HPA: Autoscaling 1-3 replicas (gerenciado pelo repo EKS)
+
+### 3️⃣ Rodar Migrações
+
+```bash
+# Conectar ao pod
+kubectl exec -it deployment/fiap-soat-application-clientes -n fiap-soat-app -- /bin/sh
+
+# Rodar migrações
+npm run migration:up
+```
+
+### 4️⃣ Verificar Health
+
+```bash
+# Obter Load Balancer URL
+kubectl get svc fiap-soat-application-clientes-service -n fiap-soat-app
+
+# Testar endpoints
+curl http://<LOAD_BALANCER_URL>/health
+curl http://<LOAD_BALANCER_URL>/docs  # Swagger
+```
+
+---
+
+## 📂 Arquitetura Limpa (Clean Architecture)
+
+Estrutura de camadas bem definidas:
 
 ```
 src/
@@ -25,28 +202,32 @@ src/
 │   ├── customers/          # Domínio: Clientes
 │   │   ├── entities/       # Entidades de negócio
 │   │   ├── operation/
-│   │   │   ├── gateways/   # Interfaces (portas)
-│   │   │   ├── presenters/ # Transformadores
-│   │   │   └── controllers/# Controllers de domínio
-│   │   └── usecases/       # Casos de uso (CQRS)
-│   │       ├── commands/   # Operações de escrita
-│   │       └── queries/    # Operações de leitura
-│   └── common/             # Compartilhado
-│       └── dtos/
+│   │   │   ├── gateways/    # Interfaces (portas)
+│   │   │   ├── presenters/  # Transformadores
+│   │   │   └── controllers/ # Controllers de domínio
+│   │   └── usecases/        # Casos de uso (CQRS)
+│   │       ├── commands/    # Operações de escrita
+│   │       └── queries/     # Operações de leitura
+│   └── common/              # Compartilhado
+│       ├── dtos/
+│       └── exceptions/
 │
 ├── external/                # 🟢 INFRASTRUCTURE + INTERFACE LAYER
-│   ├── api/                # Controllers NestJS (HTTP)
+│   ├── api/                 # Controllers NestJS (HTTP)
 │   │   ├── controllers/
 │   │   └── dtos/
-│   └── database/           # Persistência (TypeORM)
-│       ├── entities/
-│       ├── mappers/
-│       └── repositories/
+│   ├── database/            # Persistência (TypeORM)
+│   │   ├── entities/
+│   │   ├── mappers/
+│   │   └── repositories/
+│   ├── gateways/            # Integrações externas
+│   └── providers/           # Serviços externos
 │
-├── interfaces/             # Interfaces (portas)
-├── config/                 # Configurações
-├── app.module.ts           # Módulo principal
-└── main.ts                 # Entrypoint
+├── interfaces/              # Interfaces (portas)
+├── config/                  # Configurações
+│   └── database.config.ts   # Config cloud-native
+├── app.module.ts            # Módulo principal
+└── main.ts                  # Entrypoint + validação
 ```
 
 ### Princípios Aplicados
@@ -59,60 +240,29 @@ src/
 
 ---
 
-## 🚀 Deploy e Execução
+## 🔐 Autenticação Serverless
 
-### Pré-requisitos
-
-- ✅ **Node.js** 20.x
-- ✅ **PostgreSQL** 17.x (local ou RDS)
-- ✅ **Docker** e **Docker Compose** (opcional, para desenvolvimento)
-- ✅ **AWS CLI** configurado (para deploy em produção)
-
-### 1️⃣ Execução Local com Docker Compose
+### Lambda + Cognito
 
 ```bash
-# Iniciar banco de dados e aplicação
-docker-compose up -d
+# Signup (criar cliente + user Cognito)
+curl -X POST https://nlxpeaq6w0.execute-api.us-east-1.amazonaws.com/dev/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cpf": "12345678900",
+    "name": "João Silva",
+    "email": "joao@example.com"
+  }'
 
-# Verificar logs
-docker-compose logs -f application-clientes
-
-# Parar serviços
-docker-compose down
+# Auth (validar CPF + retornar JWT)
+curl -X GET https://nlxpeaq6w0.execute-api.us-east-1.amazonaws.com/dev/auth/12345678900
 ```
 
-### 2️⃣ Execução Local (Desenvolvimento)
+### Fluxo de Autenticação
 
-```bash
-# Instalar dependências
-npm install
-
-# Configurar variáveis de ambiente
-cp .env.example .env
-# Editar .env com suas configurações
-
-# Rodar migrações
-npm run migration:up
-
-# Iniciar aplicação em modo desenvolvimento
-npm run start:dev
-```
-
-### 3️⃣ Build e Deploy em Produção
-
-```bash
-# Build da aplicação
-npm run build
-
-# Build da imagem Docker
-docker build -t fiap-soat-application-clientes:latest .
-
-# Tag para ECR (se necessário)
-docker tag fiap-soat-application-clientes:latest <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fiap-soat-application-clientes:latest
-
-# Push para ECR
-docker push <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fiap-soat-application-clientes:latest
-```
+1. **Signup**: Lambda → NestJS (criar customer) → Cognito (criar user) → JWT
+2. **Auth**: Lambda → NestJS (buscar customer) → Cognito (validar) → JWT
+3. **Protected Routes**: Validar JWT no NestJS (middleware/guard)
 
 ---
 
@@ -121,15 +271,15 @@ docker push <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fiap-soat-application-c
 ### Variáveis de Ambiente Obrigatórias
 
 ```bash
-DATABASE_HOST=localhost          # ou endpoint RDS
+# .env.rds (Kubernetes Secret)
+DATABASE_HOST=fiap-soat-db.cfcimi4ia52v.us-east-1.rds.amazonaws.com
 DATABASE_PORT=5432
-DATABASE_USERNAME=postgres
-DATABASE_PASSWORD=postgres
+DATABASE_USERNAME=postgresadmin
+DATABASE_PASSWORD=SuperSecret123!
 DATABASE_NAME=customers_db
-DATABASE_SSL=false               # true para AWS RDS
-NODE_ENV=development
-PORT=3000
-```
+DATABASE_SSL=true
+NODE_ENV=production
+   ```
 
 ### Migrações TypeORM
 
@@ -159,7 +309,7 @@ CREATE TABLE customer (
 
 ---
 
-## 📊 Endpoints da API
+## 📊 Endpoints Principais
 
 ### Health Checks
 - `GET /health` - Status da aplicação e conectividade com banco
@@ -218,41 +368,6 @@ Content-Type: application/json
 }
 ```
 
-**Resposta:**
-```json
-{
-  "id": "uuid"
-}
-```
-
-#### Atualizar cliente
-```http
-PATCH /customers/:id
-Content-Type: application/json
-
-{
-  "name": "Jane Doe",
-  "email": "jane.doe@example.com"
-}
-```
-
-**Resposta:**
-```json
-{
-  "id": "uuid",
-  "name": "Jane Doe",
-  "email": "jane.doe@example.com",
-  "cpf": "12345678901"
-}
-```
-
-#### Deletar cliente
-```http
-DELETE /customers/:id
-```
-
-**Resposta:** `204 No Content`
-
 ---
 
 ## 🧪 Testes
@@ -270,57 +385,65 @@ npm run test:cov
 
 ---
 
-## 🔄 Padrão CQRS
+## 📚 Links Úteis
 
-O microserviço implementa o padrão **CQRS** (Command Query Responsibility Segregation):
-
-### Commands (Escrita)
-- `CreateCustomerUseCase` - Criar cliente
-- `UpdateCustomerUseCase` - Atualizar cliente
-- `DeleteCustomerUseCase` - Deletar cliente
-
-### Queries (Leitura)
-- `GetAllCustomersQuery` - Listar todos os clientes
-- `GetCustomerByCpfQuery` - Buscar por CPF
-- `GetCustomerByIdQuery` - Buscar por ID
+- 📦 [Repositório EKS + Kubernetes](https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform)
+- 🗄️ [Repositório RDS Terraform](https://github.com/3-fase-fiap-soat-team/fiap-soat-database-terraform)
+- ⚡ [Repositório Lambda + Cognito](https://github.com/3-fase-fiap-soat-team/fiap-soat-lambda)
+- 🎨 [Desenho de Fluxo (Miro)](https://miro.com/app/board/uXjVJXtfEMw=/)
+- 🏗️ [Diagrama de Infraestrutura](https://drive.google.com/file/d/12MQ86MMUuziVfoD7i3s9g8UmBE3q78vQ/view)
 
 ---
 
-## 🐳 Docker
+## 🔄 CI/CD e Deploy Automatizado
 
-### Build da Imagem
+### GitHub Actions Workflow
 
-```bash
-docker build -t fiap-soat-application-clientes:latest .
-```
+O repositório possui um workflow CI/CD completo (`.github/workflows/ci-cd-eks.yml`) que:
 
-### Executar Container
+1. **🧪 Testes** (Pull Requests)
+   - Executa linting
+   - Roda testes unitários
+   - Valida build da aplicação
 
-```bash
-docker run -p 3000:3000 \
-  -e DATABASE_HOST=host.docker.internal \
-  -e DATABASE_PORT=5432 \
-  -e DATABASE_USERNAME=postgres \
-  -e DATABASE_PASSWORD=postgres \
-  -e DATABASE_NAME=customers_db \
-  -e NODE_ENV=production \
-  fiap-soat-application-clientes:latest
-```
+2. **🐳 Build & Push** (Push para main)
+   - Build da imagem Docker
+   - Tag versionada com SHA do commit
+   - Push para Amazon ECR
 
----
+3. **🚀 Deploy para EKS** (Após build)
+   - Configura kubectl
+   - Cria deployment se não existir
+   - Atualiza imagem do deployment
+   - Aguarda rollout completar
+   - Verifica health da aplicação
 
-## 📦 Estrutura de Módulos
+4. **📢 Notificação** (Sempre)
+   - Relatório de sucesso/falha
+   - Informações do deployment
 
-### Core (Domínio)
-- **Entities**: Entidades de negócio (`Customer`)
-- **Factories**: Criação de entidades (`CustomerFactory`)
-- **Gateways**: Interfaces para acesso a dados (`CustomersGateway`)
-- **Use Cases**: Lógica de negócio (Commands e Queries)
-- **Presenters**: Transformação de dados para DTOs
+### Separação de Responsabilidades
 
-### External (Infraestrutura)
-- **API**: Controllers HTTP NestJS
-- **Database**: Repositórios TypeORM, Entities, Mappers
+**Repositório EKS (`fiap-soat-k8s-terraform`)**:
+- ✅ Provisiona cluster EKS via Terraform
+- ✅ Aplica infraestrutura K8s (namespace, configmap, secret, service, HPA)
+
+**Repositório Application (este)**:
+- ✅ Build e push de imagem Docker
+- ✅ Gerencia deployment.yaml
+- ✅ Atualiza aplicação no cluster
+
+### Secrets Necessários
+
+Configure no GitHub (`Settings` > `Secrets and variables` > `Actions`):
+
+| Secret | Descrição |
+|--------|-----------|
+| `AWS_DEFAULT_REGION` | Região AWS (ex: `us-east-1`) |
+| `AWS_ACCESS_KEY_ID` | Access Key da AWS |
+| `AWS_SECRET_ACCESS_KEY` | Secret Key da AWS |
+| `AWS_SESSION_TOKEN` | Session Token (AWS Academy) |
+
 
 ---
 
@@ -333,66 +456,4 @@ O microserviço implementa as seguintes validações:
 3. **Campos obrigatórios**: name, email, cpf são obrigatórios na criação
 4. **Validação de existência**: Verifica se cliente existe antes de atualizar/deletar
 
----
 
-## 🚀 Próximos Passos
-
-Para completar a migração para microserviços:
-
-1. ✅ **Customers Service** (este repositório) - **CONCLUÍDO**
-2. ⏳ **Products Service** - Gerenciamento de produtos
-3. ⏳ **Orders Service** - Gerenciamento de pedidos
-4. ⏳ **Categories Service** - Gerenciamento de categorias
-5. ⏳ **API Gateway** - Roteamento e orquestração
-6. ⏳ **Service Discovery** - Descoberta de serviços
-7. ⏳ **Message Broker** - Comunicação assíncrona (RabbitMQ/Kafka)
-
----
-
-## 📚 Links Úteis
-
-- 📦 [Repositório Principal](https://github.com/3-fase-fiap-soat-team/fiap-soat-application)
-- 🗄️ [Repositório RDS Terraform](https://github.com/3-fase-fiap-soat-team/fiap-soat-database-terraform)
-- ☸️ [Repositório EKS + Kubernetes](https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform)
-
----
-
-## 🛠️ Troubleshooting
-
-### Aplicação não conecta ao banco
-
-```bash
-# Verificar variáveis de ambiente
-echo $DATABASE_HOST
-echo $DATABASE_PORT
-
-# Testar conectividade
-psql -h $DATABASE_HOST -p $DATABASE_PORT -U $DATABASE_USERNAME -d $DATABASE_NAME
-```
-
-### Erro de migração
-
-```bash
-# Verificar se a tabela já existe
-psql -h $DATABASE_HOST -U $DATABASE_USERNAME -d $DATABASE_NAME -c "\dt customer"
-
-# Reverter e rodar novamente
-npm run migration:down
-npm run migration:up
-```
-
-### Porta já em uso
-
-```bash
-# Alterar porta no .env
-PORT=3001
-
-# Ou matar processo na porta 3000
-lsof -ti:3000 | xargs kill -9
-```
-
-
-
-
-# Deploy timestamp: Thu Jan  8 21:59:58 -03 2026
-# Test org secrets
