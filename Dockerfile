@@ -23,7 +23,7 @@ RUN npm run build
 RUN cp -r migrations dist/ 2>/dev/null || true
 RUN cp typeorm-cli.config.* dist/ 2>/dev/null || true
 
-# Copy start script
+# Copy start script that runs migrations before starting the app
 COPY start.sh ./
 RUN chmod +x start.sh
 
