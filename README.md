@@ -456,4 +456,7 @@ O microserviço implementa as seguintes validações:
 3. **Campos obrigatórios**: name, email, cpf são obrigatórios na criação
 4. **Validação de existência**: Verifica se cliente existe antes de atualizar/deletar
 
+## Evidência de execução dos testes
+<img width="1760" height="1003" alt="image" src="https://github.com/user-attachments/assets/66010eba-1970-42ca-a4a1-34cc0c83437a" />
+
 
