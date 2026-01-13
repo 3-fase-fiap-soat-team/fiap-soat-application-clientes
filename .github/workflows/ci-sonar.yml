@@ -35,10 +35,6 @@ jobs:
       - name: Run unit tests & generate LCOV
         run: npm run test:cov:lcov
 
-      - name: Check coverage thresholds
-        # Will fail the job when coverage is below configured thresholds
-        run: node ./scripts/check-coverage.js --statements 70 --lines 70
-
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
@@ -66,5 +62,11 @@ jobs:
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: SonarQube Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@v1.1.0
+        timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
