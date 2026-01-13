@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run unit tests
+        run: npm run test:cov
+
       - name: Run unit tests & generate LCOV
         run: npm run test:cov:lcov
 
