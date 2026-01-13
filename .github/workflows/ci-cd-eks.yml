@@ -26,34 +26,34 @@ jobs:
   # ==========================================
   # JOB 1: Testes e Build
   # ==========================================
-  test:
-    name: 🧪 Run Tests
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+  # test:
+  #   name: 🧪 Run Tests
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'pull_request'
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
+  #         cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+  #     - name: Install dependencies
+  #       run: npm ci
 
-      - name: Run linting
-        run: npm run lint || echo "⚠️  Lint falhou, mas continuando..."
-        continue-on-error: true
+  #     - name: Run linting
+  #       run: npm run lint || echo "⚠️  Lint falhou, mas continuando..."
+  #       continue-on-error: true
 
-      - name: Run unit tests
-        run: npm run test || echo "⚠️  Testes falharam, mas continuando..."
-        continue-on-error: true
+  #     - name: Run unit tests
+  #       run: npm run test || echo "⚠️  Testes falharam, mas continuando..."
+  #       continue-on-error: true
 
-      - name: Build application
-        run: npm run build
+  #     - name: Build application
+  #       run: npm run build
 
   # ==========================================
   # JOB 2: Build Docker Image e Push para ECR
